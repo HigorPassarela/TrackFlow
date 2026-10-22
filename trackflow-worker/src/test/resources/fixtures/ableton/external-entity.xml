@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A hostile project: the track name would pull in a local file if entities were resolved. -->
+<!DOCTYPE Ableton [
+	<!ENTITY secret SYSTEM "file:///etc/hostname">
+]>
+<Ableton MajorVersion="5" MinorVersion="12.0_12402" Creator="Ableton Live 12.4.6">
+	<LiveSet>
+		<Tracks>
+			<AudioTrack Id="1">
+				<Name>
+					<EffectiveName Value="&secret;" />
+				</Name>
+			</AudioTrack>
+		</Tracks>
+	</LiveSet>
+</Ableton>

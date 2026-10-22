@@ -1,0 +1,8 @@
+**/target/
+.git/
+.idea/
+.claude/
+openspec/
+docs/
+.env
+.env.*

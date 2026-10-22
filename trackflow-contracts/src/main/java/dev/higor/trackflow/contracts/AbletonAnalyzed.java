@@ -49,8 +49,9 @@ public sealed interface AbletonAnalyzed {
     }
 
     /**
-     * @param reason stable code shown to members: {@code invalid-project-file} or {@code
-     *     project-file-too-large}
+     * @param reason stable code shown to members: {@code invalid-project-file}, {@code
+     *     project-file-too-large} or, when the worker gave up after its retries, {@code
+     *     processing-error}
      */
     record Failed(UUID messageId, UUID jobId, UUID versionId, Instant occurredAt, String reason)
             implements AbletonAnalyzed {}

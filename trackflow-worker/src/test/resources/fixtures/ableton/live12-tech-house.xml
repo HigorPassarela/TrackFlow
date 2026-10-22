@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Minimal Live 12 project with the paths surveyed on a real Live 12.4 file. Unknown elements
+     (LomId, Mixer) stay in, so the reader is tested against noise as well. -->
+<Ableton MajorVersion="5" MinorVersion="12.0_12402" SchemaChangeCount="5" Creator="Ableton Live 12.4.6">
+	<LiveSet>
+		<NextPointeeId Value="22642" />
+		<Tracks>
+			<AudioTrack Id="8">
+				<LomId Value="0" />
+				<Name>
+					<EffectiveName Value="Kick" />
+					<UserName Value="Kick" />
+				</Name>
+				<DeviceChain>
+					<Mixer><Volume><Manual Value="1" /></Volume></Mixer>
+					<DeviceChain>
+						<Devices>
+							<Compressor2 Id="0"><On><Manual Value="true" /></On></Compressor2>
+						</Devices>
+					</DeviceChain>
+				</DeviceChain>
+			</AudioTrack>
+			<MidiTrack Id="12">
+				<Name>
+					<EffectiveName Value="Bass" />
+					<UserName Value="Bass" />
+				</Name>
+				<DeviceChain>
+					<DeviceChain>
+						<Devices>
+							<PluginDevice Id="0">
+								<PluginDesc>
+									<Vst3PluginInfo Id="0">
+										<Name Value="Serum" />
+									</Vst3PluginInfo>
+								</PluginDesc>
+							</PluginDevice>
+							<AutoFilter Id="1" />
+						</Devices>
+					</DeviceChain>
+				</DeviceChain>
+			</MidiTrack>
+			<AudioTrack Id="15">
+				<Name>
+					<EffectiveName Value="Vocal Chop" />
+					<UserName Value="Vocal Chop" />
+				</Name>
+				<DeviceChain>
+					<DeviceChain>
+						<Devices />
+					</DeviceChain>
+				</DeviceChain>
+			</AudioTrack>
+		</Tracks>
+		<MainTrack>
+			<Name>
+				<EffectiveName Value="Main" />
+			</Name>
+			<DeviceChain>
+				<Mixer>
+					<Tempo>
+						<LomId Value="0" />
+						<Manual Value="126" />
+					</Tempo>
+					<TimeSignature>
+						<Manual Value="201" />
+					</TimeSignature>
+				</Mixer>
+			</DeviceChain>
+		</MainTrack>
+	</LiveSet>
+</Ableton>

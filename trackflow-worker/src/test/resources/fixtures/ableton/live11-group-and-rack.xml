@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Live 11 names the main track MasterTrack. Also covers a group track, a return track and a
+     plugin nested inside a rack, which still belongs to the track. -->
+<Ableton MajorVersion="5" MinorVersion="11.0_11300" SchemaChangeCount="3" Creator="Ableton Live 11.3.13">
+	<LiveSet>
+		<Tracks>
+			<GroupTrack Id="20">
+				<Name>
+					<EffectiveName Value="Drums" />
+				</Name>
+				<DeviceChain>
+					<DeviceChain>
+						<Devices>
+							<AudioEffectGroupDevice Id="0">
+								<Branches>
+									<AudioEffectBranch Id="0">
+										<DeviceChain>
+											<AudioToAudioDeviceChain>
+												<Devices>
+													<PluginDevice Id="0">
+														<PluginDesc>
+															<VstPluginInfo Id="0">
+																<PlugName Value="Decapitator" />
+															</VstPluginInfo>
+														</PluginDesc>
+													</PluginDevice>
+												</Devices>
+											</AudioToAudioDeviceChain>
+										</DeviceChain>
+									</AudioEffectBranch>
+								</Branches>
+							</AudioEffectGroupDevice>
+						</Devices>
+					</DeviceChain>
+				</DeviceChain>
+			</GroupTrack>
+			<MidiTrack Id="21">
+				<Name>
+					<EffectiveName Value="Lead" />
+				</Name>
+				<DeviceChain>
+					<DeviceChain>
+						<Devices>
+							<PluginDevice Id="0">
+								<PluginDesc>
+									<AuPluginInfo Id="0">
+										<Name Value="Diva" />
+										<Manufacturer Value="u-he" />
+									</AuPluginInfo>
+								</PluginDesc>
+							</PluginDevice>
+						</Devices>
+					</DeviceChain>
+				</DeviceChain>
+			</MidiTrack>
+			<ReturnTrack Id="2">
+				<Name>
+					<EffectiveName Value="A-Reverb" />
+				</Name>
+				<DeviceChain>
+					<DeviceChain>
+						<Devices>
+							<Reverb Id="0" />
+						</Devices>
+					</DeviceChain>
+				</DeviceChain>
+			</ReturnTrack>
+		</Tracks>
+		<MasterTrack>
+			<DeviceChain>
+				<Mixer>
+					<Tempo>
+						<Manual Value="124.5" />
+					</Tempo>
+					<TimeSignature>
+						<Manual Value="302" />
+					</TimeSignature>
+				</Mixer>
+			</DeviceChain>
+		</MasterTrack>
+	</LiveSet>
+</Ableton>

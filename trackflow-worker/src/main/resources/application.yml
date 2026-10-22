@@ -1,0 +1,59 @@
+# Same conventions as the API: secrets from the environment, Trackflow values under "trackflow.*",
+# and the limits that matter for behavior visible here.
+
+spring:
+  application:
+    name: trackflow-worker
+  main:
+    web-application-type: none # no HTTP server: jobs arrive through RabbitMQ (design D1)
+  threads:
+    virtual:
+      enabled: true
+  jmx:
+    enabled: true # Actuator's only way in, since there is no HTTP server
+  rabbitmq:
+    host: ${TRACKFLOW_RABBIT_HOST:localhost}
+    username: ${TRACKFLOW_RABBIT_USER:trackflow}
+    password: ${TRACKFLOW_RABBIT_PASSWORD:trackflow}
+    # A result only counts as sent when the broker confirms it and routed it to a queue.
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
+    listener:
+      simple:
+        default-requeue-rejected: false # failed messages go to the DLQ instead of looping
+        prefetch: 1 # one ffmpeg job at a time per consumer; jobs take minutes, not milliseconds
+        retry:
+          # Three attempts in all: the first one plus two retries, waiting 2 s and then 4 s
+          # (the backoff doubles up to 8 s). Bad files are never retried (MessagingConfiguration).
+          enabled: true
+          max-retries: 2
+          initial-interval: 2s
+          multiplier: 2
+          max-interval: 8s
+
+trackflow:
+  storage:
+    # endpoint: unset means AWS S3 itself; TRACKFLOW_STORAGE_ENDPOINT sets it (relaxed binding)
+    region: ${TRACKFLOW_STORAGE_REGION:us-east-1}
+    bucket: ${TRACKFLOW_STORAGE_BUCKET:trackflow}
+    access-key: ${TRACKFLOW_STORAGE_ACCESS_KEY} # secrets have no default
+    secret-key: ${TRACKFLOW_STORAGE_SECRET_KEY}
+  worker:
+    audio:
+      max-duration: 20m
+      step-timeout: 5m
+      ffmpeg: ffmpeg
+      ffprobe: ffprobe
+
+management:
+  endpoints:
+    jmx:
+      exposure:
+        include: health,info,metrics
+
+logging:
+  structured:
+    format:
+      console: ecs
