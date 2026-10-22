@@ -1,0 +1,57 @@
+# Conventions:
+# - Secrets and per-environment values come from environment variables, never committed.
+# - Every Trackflow-specific value lives under "trackflow.<module>" and is bound to a record.
+# - Defaults that matter for behavior (limits, timeouts) are visible here, not hidden in code.
+
+spring:
+  application:
+    name: trackflow-api
+  threads:
+    virtual:
+      enabled: true
+  jpa:
+    open-in-view: false # no lazy loading from controllers; services return what the web layer needs
+    hibernate:
+      ddl-auto: validate # Flyway owns the schema
+  datasource:
+    url: ${TRACKFLOW_DB_URL:jdbc:postgresql://localhost:5432/trackflow}
+    username: ${TRACKFLOW_DB_USER:trackflow}
+    password: ${TRACKFLOW_DB_PASSWORD:trackflow}
+  rabbitmq:
+    host: ${TRACKFLOW_RABBIT_HOST:localhost}
+    publisher-confirm-type: simple
+    listener:
+      simple:
+        default-requeue-rejected: false # failed messages go to the DLQ instead of looping
+  modulith:
+    events:
+      republish-outstanding-events-on-restart: true
+      jdbc:
+        schema-initialization:
+          enabled: false # created by V1__modulith_event_publication.sql
+
+trackflow:
+  storage:
+    endpoint: ${TRACKFLOW_STORAGE_ENDPOINT:http://localhost:8333}
+    region: us-east-1
+    bucket: trackflow
+    access-key: ${TRACKFLOW_STORAGE_ACCESS_KEY}
+    secret-key: ${TRACKFLOW_STORAGE_SECRET_KEY}
+  version:
+    upload:
+      max-file-size: 1GB
+      max-ableton-file-size: 50MB
+      url-ttl: 15m
+    playback:
+      url-ttl: 1h
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+logging:
+  structured:
+    format:
+      console: ecs

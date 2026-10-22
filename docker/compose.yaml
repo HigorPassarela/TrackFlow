@@ -1,0 +1,87 @@
+# Local infrastructure for development. Defaults are local-only values matching .env.example;
+# override them with --env-file .env.
+# Image tags are pinned in design.md (D16).
+name: trackflow
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: trackflow
+      POSTGRES_USER: ${TRACKFLOW_DB_USER:-trackflow}
+      POSTGRES_PASSWORD: ${TRACKFLOW_DB_PASSWORD:-trackflow}
+    ports:
+      - "5432:5432"
+    volumes:
+      # Postgres 18 keeps PGDATA under a versioned subdirectory of /var/lib/postgresql.
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:4.4-management
+    environment:
+      RABBITMQ_DEFAULT_USER: ${TRACKFLOW_RABBIT_USER:-trackflow}
+      RABBITMQ_DEFAULT_PASS: ${TRACKFLOW_RABBIT_PASSWORD:-trackflow}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.48
+    environment:
+      S3_ACCESS_KEY: ${TRACKFLOW_STORAGE_ACCESS_KEY:-trackflow}
+      S3_SECRET_KEY: ${TRACKFLOW_STORAGE_SECRET_KEY:-trackflow}
+    # The S3 identity file is written at startup from the environment, so no credentials file is committed.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        cat > /tmp/s3.json <<EOF
+        {"identities":[{"name":"trackflow","credentials":[{"accessKey":"$${S3_ACCESS_KEY}","secretKey":"$${S3_SECRET_KEY}"}],"actions":["Admin","Read","List","Tagging","Write"]}]}
+        EOF
+        exec weed server -dir=/data -ip.bind=0.0.0.0 -s3 -s3.port=8333 -s3.config=/tmp/s3.json
+    ports:
+      - "8333:8333"
+    volumes:
+      - seaweedfs-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8333/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  # One-shot job: creates the bucket and the CORS rule the demo page needs for direct uploads.
+  seaweedfs-init:
+    image: amazon/aws-cli:2.38.3
+    depends_on:
+      seaweedfs:
+        condition: service_healthy
+    environment:
+      AWS_ACCESS_KEY_ID: ${TRACKFLOW_STORAGE_ACCESS_KEY:-trackflow}
+      AWS_SECRET_ACCESS_KEY: ${TRACKFLOW_STORAGE_SECRET_KEY:-trackflow}
+      AWS_DEFAULT_REGION: ${TRACKFLOW_STORAGE_REGION:-us-east-1}
+      BUCKET: ${TRACKFLOW_STORAGE_BUCKET:-trackflow}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        s3="aws --endpoint-url http://seaweedfs:8333 s3api"
+        $$s3 head-bucket --bucket "$$BUCKET" 2>/dev/null || $$s3 create-bucket --bucket "$$BUCKET"
+        $$s3 put-bucket-cors --bucket "$$BUCKET" --cors-configuration '{"CORSRules":[{"AllowedOrigins":["*"],"AllowedMethods":["PUT","GET","HEAD"],"AllowedHeaders":["*"],"ExposeHeaders":["ETag","Content-Length","Content-Range","Accept-Ranges"],"MaxAgeSeconds":3600}]}'
+        echo "bucket $$BUCKET ready"
+    restart: "no"
+
+volumes:
+  postgres-data:
+  rabbitmq-data:
+  seaweedfs-data:

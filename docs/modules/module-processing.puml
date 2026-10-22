@@ -1,0 +1,33 @@
+@startuml
+title <size:24>Processing</size>
+
+set separator none
+top to bottom direction
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Component>
+
+System_Boundary("TrackflowApiApplication_boundary", "TrackflowApiApplication", $tags="") {
+  Container_Boundary("TrackflowApiApplication.TrackflowApiApplication_boundary", "TrackflowApiApplication", $tags="") {
+    Component(TrackflowApiApplication.TrackflowApiApplication.Processing, "Processing", $techn="Module", $descr="", $tags="", $link="")
+    Component(TrackflowApiApplication.TrackflowApiApplication.Abletonprojectanalysis, "Ableton project analysis", $techn="Module", $descr="", $tags="", $link="")
+    Component(TrackflowApiApplication.TrackflowApiApplication.Trackversions, "Track versions", $techn="Module", $descr="", $tags="", $link="")
+  }
+
+}
+
+Rel(TrackflowApiApplication.TrackflowApiApplication.Processing, TrackflowApiApplication.TrackflowApiApplication.Trackversions, "listens to", $techn="", $tags="", $link="")
+Rel(TrackflowApiApplication.TrackflowApiApplication.Processing, TrackflowApiApplication.TrackflowApiApplication.Abletonprojectanalysis, "uses", $techn="", $tags="", $link="")
+Rel(TrackflowApiApplication.TrackflowApiApplication.Processing, TrackflowApiApplication.TrackflowApiApplication.Trackversions, "uses", $techn="", $tags="", $link="")
+
+SHOW_LEGEND(true)
+hide stereotypes
+@enduml

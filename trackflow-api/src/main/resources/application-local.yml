@@ -1,0 +1,14 @@
+# Local development on http://localhost:8080 with docker/compose.yaml.
+
+server:
+  servlet:
+    session:
+      cookie:
+        secure: false # no HTTPS locally; the browser would drop a Secure cookie
+
+# Same values as docker/compose.yaml and .env.example; only valid against the local containers.
+trackflow:
+  storage:
+    endpoint: ${TRACKFLOW_STORAGE_ENDPOINT:http://localhost:8333}
+    access-key: ${TRACKFLOW_STORAGE_ACCESS_KEY:trackflow}
+    secret-key: ${TRACKFLOW_STORAGE_SECRET_KEY:trackflow}

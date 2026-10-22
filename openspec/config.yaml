@@ -1,0 +1,65 @@
+schema: spec-driven
+
+context: |
+  Language: pt-BR
+  All artifacts must be written in pt-BR.
+  Keep OpenSpec structural headings and SHALL/MUST keywords in English.
+  Code identifiers, commit messages and log messages are written in English.
+
+  Produto: Trackflow — plataforma de colaboração para produtores musicais.
+  Cada projeto é uma faixa; cada versão é um bounce enviado (áudio ou vídeo de
+  gravação de tela), processado de forma assíncrona e comentado em pontos exatos
+  da forma de onda. Projeto de portfólio no GitHub: legibilidade, testes e
+  decisões documentadas importam tanto quanto as funcionalidades.
+
+  Stack:
+  - Java 25 (LTS), Spring Boot 4.1, Maven multi-módulo com Maven Wrapper
+  - Versões exatas: tabela do D16 em openspec/changes/add-trackflow-mvp/design.md.
+    Nunca use versões de memória nem milestones; se precisar de algo fora da tabela,
+    confira a versão estável atual antes.
+  - trackflow-api: Spring MVC, Spring Modulith 2.1, Spring Data JPA, Flyway,
+    Spring Security (OAuth2 Login), Bean Validation, springdoc-openapi, Actuator
+  - trackflow-worker: Spring Boot sem web, ffmpeg/ffprobe, análise de .als
+  - trackflow-contracts: records das mensagens trocadas entre API e worker
+  - PostgreSQL 18, RabbitMQ 4.4, storage compatível com S3 (SeaweedFS local, AWS SDK v2)
+  - Testes: JUnit 5, AssertJ, Mockito, Testcontainers 2, ArchUnit
+  - Lombok apenas em entidades JPA; records para DTOs, eventos, comandos e mensagens
+
+  Arquitetura:
+  - Monólito modular (Spring Modulith) na API, módulos em dev.higor.trackflow.api:
+    identity, project, storage, version, processing, comment, ableton e shared
+    (módulo aberto com erros, web e utilidades).
+  - Hexagonal-light: ports só em fronteiras de infraestrutura que mudam ou precisam
+    de fake em teste (storage, broker, ffmpeg). Módulos de CRUD usam camadas simples
+    web -> application -> domain.
+  - Módulos se comunicam pela API pública (tipos na raiz do pacote do módulo) ou por
+    eventos; nunca por classes de subpacotes internos. Verificado por teste.
+
+  Guia de código: .claude/skills/trackflow-code-style/SKILL.md (com exemplos).
+
+rules:
+  proposal:
+    - Liste explicitamente o que fica fora do escopo e em qual change futura entra.
+    - Nomeie capabilities pelo comportamento durável, em kebab-case.
+  specs:
+    - Use WHEN/THEN em todo cenário e inclua ao menos um cenário de erro ou de permissão por requisito que envolva acesso a projeto.
+    - Descreva limites concretos (tamanhos, prazos, formatos) quando o comportamento depender deles.
+    - Não cite classes, bibliotecas, tabelas ou frameworks.
+  design:
+    - Toda decisão traz as alternativas consideradas e o motivo da escolha.
+    - Indique a qual módulo do Modulith cada responsabilidade pertence.
+    - Siga as convenções da skill trackflow-code-style; registre aqui qualquer exceção.
+  tasks:
+    - Cada tarefa diz como verificar a conclusão (teste, comando ou comportamento observável).
+    - Testes e documentação ficam no mesmo grupo do código que os exige.
+    - Tarefas pequenas o bastante para caber em uma sessão.
+
+operations:
+  apply:
+    guidance:
+      - Carregue a skill trackflow-code-style antes de escrever ou revisar código Java.
+      - Ao terminar cada grupo de tarefas, rode ./mvnw -B verify e só marque as tarefas quando passar.
+      - Não altere specs durante o apply; se algo precisar mudar, pare e proponha a atualização da change.
+  archive:
+    guidance:
+      - Confirme que README e diagramas refletem o que foi entregue antes de arquivar.

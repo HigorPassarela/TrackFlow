@@ -1,0 +1,89 @@
+# Conventions:
+# - Secrets and per-environment values come from environment variables, never committed.
+# - Every Trackflow-specific value lives under "trackflow.<module>" and is bound to a record.
+# - Defaults that matter for behavior (limits, timeouts) are visible here, not hidden in code.
+
+spring:
+  application:
+    name: trackflow-api
+  threads:
+    virtual:
+      enabled: true
+  jpa:
+    open-in-view: false # no lazy loading from controllers; services return what the web layer needs
+    hibernate:
+      ddl-auto: validate # Flyway owns the schema
+  datasource:
+    url: ${TRACKFLOW_DB_URL:jdbc:postgresql://localhost:5432/trackflow}
+    username: ${TRACKFLOW_DB_USER:trackflow}
+    password: ${TRACKFLOW_DB_PASSWORD:trackflow}
+  security:
+    oauth2:
+      client:
+        registration:
+          # Placeholders let the app start without OAuth apps; the local profile uses the dev login.
+          github:
+            client-id: ${TRACKFLOW_GITHUB_CLIENT_ID:not-configured}
+            client-secret: ${TRACKFLOW_GITHUB_CLIENT_SECRET:not-configured}
+            scope: read:user,user:email
+          google:
+            client-id: ${TRACKFLOW_GOOGLE_CLIENT_ID:not-configured}
+            client-secret: ${TRACKFLOW_GOOGLE_CLIENT_SECRET:not-configured}
+            # Without "openid" Google goes through the same OAuth2UserService as GitHub.
+            scope: profile,email
+  rabbitmq:
+    host: ${TRACKFLOW_RABBIT_HOST:localhost}
+    username: ${TRACKFLOW_RABBIT_USER:trackflow}
+    password: ${TRACKFLOW_RABBIT_PASSWORD:trackflow}
+    # A job only counts as sent when the broker confirms it and routed it to a queue (D6).
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
+    listener:
+      simple:
+        default-requeue-rejected: false # failed messages go to the DLQ instead of looping
+  modulith:
+    events:
+      republish-outstanding-events-on-restart: true
+      jdbc:
+        schema-initialization:
+          enabled: false # created by V1__modulith_event_publication.sql
+
+trackflow:
+  storage:
+    # endpoint: unset means AWS S3 itself; TRACKFLOW_STORAGE_ENDPOINT sets it (relaxed binding)
+    region: ${TRACKFLOW_STORAGE_REGION:us-east-1}
+    bucket: ${TRACKFLOW_STORAGE_BUCKET:trackflow}
+    access-key: ${TRACKFLOW_STORAGE_ACCESS_KEY} # secrets have no default; see application-local.yml
+    secret-key: ${TRACKFLOW_STORAGE_SECRET_KEY}
+  version:
+    upload:
+      max-file-size: 1GB
+      max-ableton-file-size: 50MB
+      url-ttl: 15m
+    playback:
+      url-ttl: 1h
+    pending-cleanup:
+      max-age: 24h
+  processing:
+    resubmit-interval: 5m # incomplete event publications older than 2 minutes are sent again
+
+server:
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        same-site: lax
+        secure: true # relaxed only in application-local.yml, where there is no HTTPS
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+logging:
+  structured:
+    format:
+      console: ecs

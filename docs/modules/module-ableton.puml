@@ -1,0 +1,27 @@
+@startuml
+title <size:24>Ableton project analysis</size>
+
+set separator none
+top to bottom direction
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Component>
+
+System_Boundary("TrackflowApiApplication_boundary", "TrackflowApiApplication", $tags="") {
+  Container_Boundary("TrackflowApiApplication.TrackflowApiApplication_boundary", "TrackflowApiApplication", $tags="") {
+    Component(TrackflowApiApplication.TrackflowApiApplication.Abletonprojectanalysis, "Ableton project analysis", $techn="Module", $descr="", $tags="", $link="")
+  }
+
+}
+
+SHOW_LEGEND(true)
+hide stereotypes
+@enduml

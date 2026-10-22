@@ -1,0 +1,39 @@
+@startuml
+title <size:24>Track versions</size>
+
+set separator none
+top to bottom direction
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Component>
+
+System_Boundary("TrackflowApiApplication_boundary", "TrackflowApiApplication", $tags="") {
+  Container_Boundary("TrackflowApiApplication.TrackflowApiApplication_boundary", "TrackflowApiApplication", $tags="") {
+    Component(TrackflowApiApplication.TrackflowApiApplication.Sharedkernel, "Shared kernel", $techn="Module", $descr="", $tags="", $link="")
+    Component(TrackflowApiApplication.TrackflowApiApplication.Storage, "Storage", $techn="Module", $descr="", $tags="", $link="")
+    Component(TrackflowApiApplication.TrackflowApiApplication.Identity, "Identity", $techn="Module", $descr="", $tags="", $link="")
+    Component(TrackflowApiApplication.TrackflowApiApplication.Projects, "Projects", $techn="Module", $descr="", $tags="", $link="")
+    Component(TrackflowApiApplication.TrackflowApiApplication.Trackversions, "Track versions", $techn="Module", $descr="", $tags="", $link="")
+  }
+
+}
+
+Rel(TrackflowApiApplication.TrackflowApiApplication.Projects, TrackflowApiApplication.TrackflowApiApplication.Identity, "uses", $techn="", $tags="", $link="")
+Rel(TrackflowApiApplication.TrackflowApiApplication.Projects, TrackflowApiApplication.TrackflowApiApplication.Sharedkernel, "uses", $techn="", $tags="", $link="")
+Rel(TrackflowApiApplication.TrackflowApiApplication.Trackversions, TrackflowApiApplication.TrackflowApiApplication.Storage, "uses", $techn="", $tags="", $link="")
+Rel(TrackflowApiApplication.TrackflowApiApplication.Trackversions, TrackflowApiApplication.TrackflowApiApplication.Projects, "uses", $techn="", $tags="", $link="")
+Rel(TrackflowApiApplication.TrackflowApiApplication.Trackversions, TrackflowApiApplication.TrackflowApiApplication.Identity, "uses", $techn="", $tags="", $link="")
+Rel(TrackflowApiApplication.TrackflowApiApplication.Trackversions, TrackflowApiApplication.TrackflowApiApplication.Sharedkernel, "uses", $techn="", $tags="", $link="")
+Rel(TrackflowApiApplication.TrackflowApiApplication.Identity, TrackflowApiApplication.TrackflowApiApplication.Sharedkernel, "depends on", $techn="", $tags="", $link="")
+
+SHOW_LEGEND(true)
+hide stereotypes
+@enduml
