@@ -17,10 +17,20 @@ top to bottom direction
 
 System_Boundary("TrackflowApiApplication_boundary", "TrackflowApiApplication", $tags="") {
   Container_Boundary("TrackflowApiApplication.TrackflowApiApplication_boundary", "TrackflowApiApplication", $tags="") {
+    Component(TrackflowApiApplication.TrackflowApiApplication.Sharedkernel, "Shared kernel", $techn="Module", $descr="", $tags="", $link="")
+    Component(TrackflowApiApplication.TrackflowApiApplication.Identity, "Identity", $techn="Module", $descr="", $tags="", $link="")
+    Component(TrackflowApiApplication.TrackflowApiApplication.Projects, "Projects", $techn="Module", $descr="", $tags="", $link="")
     Component(TrackflowApiApplication.TrackflowApiApplication.Abletonprojectanalysis, "Ableton project analysis", $techn="Module", $descr="", $tags="", $link="")
   }
 
 }
+
+Rel(TrackflowApiApplication.TrackflowApiApplication.Projects, TrackflowApiApplication.TrackflowApiApplication.Identity, "uses", $techn="", $tags="", $link="")
+Rel(TrackflowApiApplication.TrackflowApiApplication.Projects, TrackflowApiApplication.TrackflowApiApplication.Sharedkernel, "uses", $techn="", $tags="", $link="")
+Rel(TrackflowApiApplication.TrackflowApiApplication.Abletonprojectanalysis, TrackflowApiApplication.TrackflowApiApplication.Sharedkernel, "depends on", $techn="", $tags="", $link="")
+Rel(TrackflowApiApplication.TrackflowApiApplication.Abletonprojectanalysis, TrackflowApiApplication.TrackflowApiApplication.Identity, "depends on", $techn="", $tags="", $link="")
+Rel(TrackflowApiApplication.TrackflowApiApplication.Abletonprojectanalysis, TrackflowApiApplication.TrackflowApiApplication.Projects, "uses", $techn="", $tags="", $link="")
+Rel(TrackflowApiApplication.TrackflowApiApplication.Identity, TrackflowApiApplication.TrackflowApiApplication.Sharedkernel, "depends on", $techn="", $tags="", $link="")
 
 SHOW_LEGEND(true)
 hide stereotypes

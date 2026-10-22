@@ -26,11 +26,11 @@ System_Boundary("TrackflowApiApplication_boundary", "TrackflowApiApplication", $
 
 }
 
-Rel(TrackflowApiApplication.TrackflowApiApplication.Projects, TrackflowApiApplication.TrackflowApiApplication.Identity, "uses", $techn="", $tags="", $link="")
-Rel(TrackflowApiApplication.TrackflowApiApplication.Projects, TrackflowApiApplication.TrackflowApiApplication.Sharedkernel, "uses", $techn="", $tags="", $link="")
 Rel(TrackflowApiApplication.TrackflowApiApplication.Trackversions, TrackflowApiApplication.TrackflowApiApplication.Projects, "uses", $techn="", $tags="", $link="")
 Rel(TrackflowApiApplication.TrackflowApiApplication.Trackversions, TrackflowApiApplication.TrackflowApiApplication.Identity, "uses", $techn="", $tags="", $link="")
 Rel(TrackflowApiApplication.TrackflowApiApplication.Trackversions, TrackflowApiApplication.TrackflowApiApplication.Sharedkernel, "uses", $techn="", $tags="", $link="")
+Rel(TrackflowApiApplication.TrackflowApiApplication.Projects, TrackflowApiApplication.TrackflowApiApplication.Identity, "uses", $techn="", $tags="", $link="")
+Rel(TrackflowApiApplication.TrackflowApiApplication.Projects, TrackflowApiApplication.TrackflowApiApplication.Sharedkernel, "uses", $techn="", $tags="", $link="")
 Rel(TrackflowApiApplication.TrackflowApiApplication.Timedcomments, TrackflowApiApplication.TrackflowApiApplication.Sharedkernel, "depends on", $techn="", $tags="", $link="")
 Rel(TrackflowApiApplication.TrackflowApiApplication.Timedcomments, TrackflowApiApplication.TrackflowApiApplication.Projects, "uses", $techn="", $tags="", $link="")
 Rel(TrackflowApiApplication.TrackflowApiApplication.Timedcomments, TrackflowApiApplication.TrackflowApiApplication.Trackversions, "uses", $techn="", $tags="", $link="")

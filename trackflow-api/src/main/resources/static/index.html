@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Trackflow · demo</title>
+    <link rel="stylesheet" href="/demo/app.css">
+</head>
+<body>
+<!--
+    Página de demonstração do MVP (design: non-goal "frontend de produto"). Existe para gravar o GIF
+    do README e testar o fluxo à mão: login, projetos, upload direto ao storage, status em tempo real,
+    player com forma de onda e comentários marcados no tempo. Sem framework nem build: tudo em
+    /demo/app.js, falando com a mesma API pública que qualquer cliente usaria.
+-->
+<header class="topbar">
+    <h1>Trackflow</h1>
+    <div id="session"></div>
+</header>
+
+<main>
+    <section id="login" class="card" hidden>
+        <h2>Entrar</h2>
+        <p>Login de desenvolvimento (só no profile <code>local</code>):</p>
+        <form id="dev-login" class="row">
+            <input name="name" placeholder="produtor-a" pattern="[a-z0-9-]{2,60}" required>
+            <button>Entrar</button>
+        </form>
+        <p>ou <a href="/oauth2/authorization/github">entrar com GitHub</a> ·
+            <a href="/oauth2/authorization/google">entrar com Google</a></p>
+        <p id="login-error" class="error"></p>
+    </section>
+
+    <div id="workspace" hidden>
+        <section class="card" id="projects-card">
+            <h2>Meus projetos</h2>
+            <ul id="projects" class="list"></ul>
+            <form id="new-project" class="row">
+                <input name="title" placeholder="Nova faixa" maxlength="120" required>
+                <input name="genre" placeholder="Gênero" maxlength="60">
+                <button>Criar</button>
+            </form>
+        </section>
+
+        <section class="card" id="project-card" hidden>
+            <h2 id="project-title"></h2>
+            <form id="upload" class="column">
+                <label>Bounce (áudio ou vídeo) <input type="file" name="file" accept="audio/*,video/*" required></label>
+                <label>Projeto do Ableton (opcional) <input type="file" name="als" accept=".als"></label>
+                <input name="notes" placeholder="Notas da versão (ex.: kick novo, sidechain no baixo)" maxlength="2000">
+                <button>Enviar versão</button>
+                <progress id="upload-progress" max="100" value="0" hidden></progress>
+            </form>
+            <ul id="versions" class="list"></ul>
+        </section>
+
+        <section class="card" id="player-card" hidden>
+            <h2 id="player-title"></h2>
+            <p id="player-metrics" class="muted"></p>
+            <canvas id="waveform" height="120"></canvas>
+            <audio id="audio" controls preload="metadata"></audio>
+            <form id="comment" class="row">
+                <input name="body" placeholder="Comentário no ponto atual" maxlength="2000" required>
+                <button>Comentar em <span id="comment-at">0:00</span></button>
+            </form>
+            <label class="muted"><input type="checkbox" id="only-unresolved"> só não resolvidos</label>
+            <ul id="comments" class="list"></ul>
+        </section>
+    </div>
+</main>
+
+<script src="/demo/app.js"></script>
+</body>
+</html>

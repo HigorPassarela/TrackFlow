@@ -1,8 +1,75 @@
 # Trackflow
 
+[![CI](https://github.com/HigorPassarela/TrackFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/HigorPassarela/TrackFlow/actions/workflows/ci.yml)
+
 Plataforma de colaboração para produtores musicais: cada projeto é uma faixa, cada versão é um bounce processado de forma assíncrona e comentado em pontos exatos da forma de onda.
 
-> Em construção. A visão geral, o diagrama de arquitetura e as decisões principais entram ao fim do MVP (`openspec/changes/add-trackflow-mvp/`).
+- **Versões numeradas**: o bounce vai direto do navegador para o storage por URL pré-assinada; a API só confirma.
+- **Processamento assíncrono**: o worker gera o preview em MP3, a forma de onda, o BPM estimado, o loudness (LUFS) e o true peak.
+- **Comentários no tempo**: cada comentário aponta um milissegundo da faixa, com respostas, resolução e filtro de pendentes.
+- **Projetos do Ableton**: o `.als` enviado junto vira um snapshot (tempo, faixas, devices, plugins) e duas versões podem ser comparadas.
+- **Colaboração**: papéis (dono, editor, ouvinte), convites e links de audição; status em tempo real por SSE.
+
+<!-- GIF da demo: gravar a página http://localhost:8080 e salvar em docs/demo.gif -->
+
+## Arquitetura
+
+```mermaid
+flowchart LR
+    browser[Navegador / demo]
+    subgraph api[trackflow-api · Spring Boot + Modulith]
+        identity --> shared
+        project --> identity
+        version --> project
+        version --> storage
+        comment --> version
+        ableton --> project
+        processing --> version
+        processing --> ableton
+    end
+    worker[trackflow-worker · ffmpeg + leitor de .als]
+    pg[(PostgreSQL)]
+    mq[[RabbitMQ]]
+    s3[(SeaweedFS · S3)]
+
+    browser -- REST + SSE --> api
+    browser -- PUT/GET por URL assinada --> s3
+    api --> pg
+    api -- jobs --> mq
+    mq -- jobs --> worker
+    worker -- resultados --> mq
+    mq -- resultados --> api
+    worker -- baixa original, sobe preview e picos --> s3
+```
+
+Três módulos Maven: `trackflow-api`, `trackflow-worker` e `trackflow-contracts` (os records das mensagens entre os dois). A API publica os jobs pelo registro de eventos do Spring Modulith depois do commit, então nada se perde se o broker cair; o worker reprocessa com retry e, quando desiste, devolve um resultado de falha para a versão não ficar presa em processamento.
+
+### Módulos da API
+
+| Módulo | Responsabilidade | Depende de |
+|---|---|---|
+| `shared` | erros (ProblemDetail), config web, `Clock`, tokens | — |
+| `identity` | usuários, login OAuth2 e de desenvolvimento | shared |
+| `project` | projetos, membros, papéis, convites, `ProjectAccess` | identity, shared |
+| `storage` | port `ObjectStorage` + adapter S3 | shared |
+| `version` | versões, upload, numeração, reprodução, links de audição, SSE | project, storage, identity, shared |
+| `processing` | envio de jobs ao worker e recepção dos resultados | version, ableton, shared |
+| `comment` | comentários marcados no tempo | version, project, identity, shared |
+| `ableton` | snapshots dos `.als` e diff entre versões | project, identity, shared |
+
+O `ModularityTest` falha se algum módulo importar um subpacote interno de outro ou criar um ciclo. Os diagramas gerados ficam em [`docs/modules/`](docs/modules/).
+
+### Decisões principais
+
+O raciocínio completo está em [`design.md`](openspec/changes/add-trackflow-mvp/design.md). Em resumo:
+
+- **Monólito modular em vez de microsserviços** (D2): fronteiras verificadas em teste, um deploy só.
+- **Ports só nas fronteiras de infraestrutura** (D3): storage, broker e ffmpeg; CRUD fica em `web → application → domain`.
+- **Upload direto ao storage** (D4): o arquivo nunca passa pela API.
+- **Entrega confiável de jobs** (D6) e **resultados idempotentes** (D8): resultado repetido ou atrasado não muda uma versão já concluída.
+- **Pipeline do worker com ffmpeg** (D7) e **leitura de `.als` por StAX** (D10), com DTD e entidades externas desligadas.
+- **Não membro recebe 404** (D11, D14): a API não revela que um projeto existe.
+- **Testes com infraestrutura real** (D15): Testcontainers para PostgreSQL, RabbitMQ e SeaweedFS.
 
 ## Rodando localmente
 
@@ -11,7 +78,18 @@ Pré-requisitos: JDK 25, Docker e (para os testes do worker) ffmpeg.
 ```bash
 cp .env.example .env                                  # valores locais; ajuste se quiser
 docker compose --env-file .env -f docker/compose.yaml up -d
+set -a; source .env; set +a                           # o worker não tem padrão para as chaves do storage
+./mvnw -B -q install -DskipTests                      # uma vez: instala o POM pai e os contratos para o -pl
 ./mvnw -pl trackflow-api spring-boot:run -Dspring-boot.run.profiles=local
+./mvnw -pl trackflow-worker spring-boot:run           # em outro terminal; precisa do ffmpeg no PATH
+```
+
+Com os dois no ar, a página de demonstração fica em <http://localhost:8080>: login de desenvolvimento, projetos, upload, player com forma de onda e comentários. É uma página estática sem build (`trackflow-api/src/main/resources/static/`), feita para testar o fluxo à mão, não um frontend de produto.
+
+O worker também tem imagem própria, com o ffmpeg incluído:
+
+```bash
+docker build -f trackflow-worker/Dockerfile -t trackflow-worker .
 ```
 
 O `docker/compose.yaml` também funciona sem `.env`: os padrões são os mesmos valores do `.env.example`.
@@ -68,3 +146,17 @@ Contas de provedores diferentes nunca são unidas pelo e-mail: entrar pelo GitHu
 ```bash
 curl -s -b cookies.txt -H "X-XSRF-TOKEN: $XSRF" -X POST http://localhost:8080/logout   # 204
 ```
+
+## Testes
+
+```bash
+./mvnw -B verify                                     # build + testes + Spotless + ModularityTest
+./scripts/smoke.sh                                   # ponta a ponta: sobe tudo, envia um WAV, espera READY e comenta
+openspec validate add-trackflow-mvp --strict         # valida a change do OpenSpec
+```
+
+O `verify` usa Testcontainers (precisa do Docker) e roda os testes marcados com `ffmpeg`, que precisam do `ffmpeg` e do `ffprobe` no PATH. O `smoke.sh` precisa também de `curl` e `jq`.
+
+## Como o projeto é construído
+
+Toda mudança de comportamento começa no [OpenSpec](openspec/): proposta, specs com cenários, design e tarefas. O MVP está em [`openspec/changes/add-trackflow-mvp/`](openspec/changes/add-trackflow-mvp/). As convenções de código ficam em [`.claude/skills/trackflow-code-style/`](.claude/skills/trackflow-code-style/).

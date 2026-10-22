@@ -1,0 +1,97 @@
+:root {
+    --bg: #f6f6f4;
+    --card: #ffffff;
+    --text: #1d1d1b;
+    --muted: #6b6b66;
+    --accent: #e4572e;
+    --wave: #b9b9b2;
+    --border: #e2e2dd;
+    color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #151514;
+        --card: #1f1f1d;
+        --text: #ededea;
+        --muted: #9d9d97;
+        --wave: #57574f;
+        --border: #33332f;
+    }
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font: 15px/1.5 system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+}
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.topbar h1 { margin: 0; font-size: 20px; }
+
+main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 16px;
+    display: grid;
+    gap: 16px;
+}
+
+#workspace { display: grid; gap: 16px; }
+
+.card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.card h2 { margin-top: 0; font-size: 17px; }
+
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+.row input { flex: 1; min-width: 120px; }
+.column { display: grid; gap: 8px; margin-bottom: 12px; }
+
+input, button {
+    font: inherit;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+}
+
+button { background: var(--accent); color: #fff; border: none; cursor: pointer; }
+button.link { background: none; color: var(--accent); padding: 0 4px; }
+
+.list { list-style: none; padding: 0; margin: 8px 0 0; }
+.list li { padding: 8px 0; border-top: 1px solid var(--border); }
+.list li.clickable { cursor: pointer; }
+.list li.selected { font-weight: 600; }
+
+.muted { color: var(--muted); }
+.error { color: var(--accent); }
+.badge {
+    display: inline-block;
+    font-size: 12px;
+    padding: 0 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    margin-left: 6px;
+}
+
+.reply { margin-left: 24px; }
+.resolved { opacity: 0.6; }
+
+canvas { width: 100%; display: block; cursor: pointer; margin-bottom: 8px; }
+audio { width: 100%; margin-bottom: 8px; }
