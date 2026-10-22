@@ -63,7 +63,8 @@ class ProjectEventsIT {
                             AuthenticatedUser.USER_ID_ATTRIBUTE, owner.getId().toString());
                     attributes.put(AuthenticatedUser.DISPLAY_NAME_ATTRIBUTE, owner.getDisplayName());
                 }))
-                .exchange();
+                // exchange() would wait for the async result, which for SSE is the 30-minute timeout.
+                .asyncExchange();
 
         trackVersions.completeProcessing(
                 versionId, jobId, new ReadyMedia("preview.mp3", "peaks.json", 1000L, 120.0, -9.0, -1.0));
@@ -78,15 +79,16 @@ class ProjectEventsIT {
     /** Puts a version straight into PROCESSING with a known job, as if the worker had picked it up. */
     private UUID processingVersion(UUID projectId, User owner, UUID jobId) {
         return transactions.execute(status -> {
-            TrackVersion version = versions.save(TrackVersion.builder()
+            TrackVersion version = TrackVersion.builder()
                     .projectId(projectId)
                     .uploadedBy(owner.getId())
                     .originalFileName("bounce.wav")
                     .contentType("audio/wav")
                     .sizeBytes(10)
                     .createdAt(Instant.now())
-                    .build());
+                    .build();
             version.assignStorageKeys("projects/%s/versions/%s/source.wav".formatted(projectId, version.getId()), null);
+            versions.save(version);
             version.confirm(1, Instant.now());
             version.startProcessing(jobId, Instant.now());
             assertThat(version.getStatus()).isEqualTo(VersionStatus.PROCESSING);

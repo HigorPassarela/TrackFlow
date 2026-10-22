@@ -43,8 +43,13 @@ class MessagingTopologyIT {
                 .collect(Collectors.toMap(row -> (String) row.get("name"), row -> argumentsOf(row.get("arguments"))));
     }
 
-    @SuppressWarnings("unchecked")
+    /** {@code rabbitmqctl} reports arguments as {@code [name, type, value]} triples. */
     private static Map<String, Object> argumentsOf(Object arguments) {
-        return arguments instanceof Map<?, ?> map ? (Map<String, Object>) map : Map.of();
+        if (!(arguments instanceof List<?> triples)) {
+            return Map.of();
+        }
+        return triples.stream()
+                .map(triple -> (List<?>) triple)
+                .collect(Collectors.toMap(triple -> (String) triple.getFirst(), List::getLast));
     }
 }

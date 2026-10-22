@@ -43,7 +43,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.util.unit.DataSize;
 
 /**
@@ -100,9 +99,6 @@ class VersionServiceTest {
                 Clock.fixed(NOW, ZoneOffset.UTC));
         given(versions.save(any(TrackVersion.class))).willAnswer(invocation -> {
             TrackVersion version = invocation.getArgument(0);
-            if (version.getId() == null) {
-                ReflectionTestUtils.setField(version, "id", UUID.randomUUID());
-            }
             stored.put(version.getId(), version);
             return version;
         });

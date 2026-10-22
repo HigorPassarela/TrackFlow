@@ -28,9 +28,16 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 class MessagingConfiguration {
 
+    /**
+     * Always reads a message as the listener's declared type, never as the Java class named in the
+     * {@code __TypeId__} header. For sealed results the subtype then comes from the logical {@code
+     * outcome} property, so no class name from the wire decides what gets instantiated.
+     */
     @Bean
     MessageConverter messageConverter() {
-        return new JacksonJsonMessageConverter();
+        JacksonJsonMessageConverter converter = new JacksonJsonMessageConverter();
+        converter.setAlwaysConvertToInferredType(true);
+        return converter;
     }
 
     @Bean

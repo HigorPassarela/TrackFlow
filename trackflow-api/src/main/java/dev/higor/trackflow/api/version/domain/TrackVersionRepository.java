@@ -1,17 +1,28 @@
 package dev.higor.trackflow.api.version.domain;
 
 import dev.higor.trackflow.api.version.VersionStatus;
+import jakarta.persistence.LockModeType;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.ListCrudRepository;
 
 public interface TrackVersionRepository extends ListCrudRepository<TrackVersion, UUID> {
+
+    /**
+     * Reads the version and locks its row until the transaction ends ({@code select ... for
+     * update}). Used for processing transitions, so a worker result waits for the dispatch that
+     * started the job to commit.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select v from TrackVersion v where v.id = :id")
+    Optional<TrackVersion> findByIdForUpdate(UUID id);
 
     /** Includes pending uploads; only the version module itself may see those. */
     Optional<TrackVersion> findByIdAndProjectId(UUID id, UUID projectId);

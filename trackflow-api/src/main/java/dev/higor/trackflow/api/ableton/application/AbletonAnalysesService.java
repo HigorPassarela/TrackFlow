@@ -4,10 +4,12 @@ import dev.higor.trackflow.api.ableton.AbletonAnalyses;
 import dev.higor.trackflow.api.ableton.domain.AbletonAnalysis;
 import dev.higor.trackflow.api.ableton.domain.AbletonAnalysisRepository;
 import java.time.Clock;
+import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -23,11 +25,13 @@ class AbletonAnalysesService implements AbletonAnalyses {
         this.clock = clock;
     }
 
-    /** Idempotent: a resubmitted confirmation event does not create a second analysis. */
+    /** A resubmitted confirmation event never creates a second analysis. */
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void registerPending(UUID versionId, UUID projectId, UUID jobId) {
-        if (analyses.existsById(versionId)) {
+        Optional<AbletonAnalysis> existing = analyses.findById(versionId);
+        if (existing.isPresent()) {
+            existing.get().reassignPendingJob(jobId);
             return;
         }
         analyses.save(AbletonAnalysis.builder()

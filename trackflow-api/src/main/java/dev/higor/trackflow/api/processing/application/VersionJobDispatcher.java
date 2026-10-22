@@ -39,20 +39,27 @@ class VersionJobDispatcher {
         this.clock = clock;
     }
 
+    /**
+     * The analysis is registered first, in its own transaction, while no version row is locked:
+     * {@code startProcessing} locks the version until this transaction commits, and the analysis
+     * row references it.
+     */
     @ApplicationModuleListener
     void on(VersionConfirmed event) {
+        UUID abletonJobId = UUID.randomUUID();
+        if (event.abletonKey() != null) {
+            analyses.registerPending(event.versionId(), event.projectId(), abletonJobId);
+        }
         dispatchAudio(event.versionId(), event.projectId(), event.sourceKey());
         if (event.abletonKey() != null) {
-            UUID jobId = UUID.randomUUID();
-            analyses.registerPending(event.versionId(), event.projectId(), jobId);
             jobs.publish(new AnalyzeAbletonProjectJob(
                     UUID.randomUUID(),
-                    jobId,
+                    abletonJobId,
                     event.versionId(),
                     event.projectId(),
                     event.abletonKey(),
                     clock.instant()));
-            log.info("Ableton job dispatched versionId={} jobId={}", event.versionId(), jobId);
+            log.info("Ableton job dispatched versionId={} jobId={}", event.versionId(), abletonJobId);
         }
     }
 

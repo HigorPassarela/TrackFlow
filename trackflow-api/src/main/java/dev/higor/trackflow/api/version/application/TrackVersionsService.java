@@ -93,9 +93,16 @@ class TrackVersionsService implements TrackVersions {
                 version.getId(), version.getProjectId(), version.getStatus(), version.getUpdatedAt()));
     }
 
-    /** Results only come for versions this API created; a missing one is a bug, not a user error. */
+    /**
+     * Locks the row for the rest of the transaction. The dispatcher starts processing and sends the
+     * job in one transaction, and the change only reaches the database at commit; a worker can answer
+     * before that. Because both sides lock the row, the result waits for the dispatch to commit and
+     * then finds the version processing with its job, instead of discarding the result as stale.
+     *
+     * <p>Results only come for versions this API created, so a missing one is a bug, not a user error.
+     */
     private TrackVersion require(UUID versionId) {
-        return versions.findById(versionId)
+        return versions.findByIdForUpdate(versionId)
                 .orElseThrow(() -> new IllegalStateException("Unknown version versionId=" + versionId));
     }
 }

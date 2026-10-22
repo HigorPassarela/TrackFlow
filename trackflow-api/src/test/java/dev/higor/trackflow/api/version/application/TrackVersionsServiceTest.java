@@ -54,7 +54,7 @@ class TrackVersionsServiceTest {
     @DisplayName("Resultado duplicado: a versão fica com as métricas do primeiro")
     void ignoresDuplicatedSuccess() {
         TrackVersion version = TrackVersionFixtures.processing(FIRST_JOB);
-        given(versions.findById(VERSION)).willReturn(Optional.of(version));
+        given(versions.findByIdForUpdate(VERSION)).willReturn(Optional.of(version));
 
         service.completeProcessing(VERSION, FIRST_JOB, FIRST);
         service.completeProcessing(VERSION, FIRST_JOB, SECOND);
@@ -74,7 +74,7 @@ class TrackVersionsServiceTest {
         TrackVersion version = TrackVersionFixtures.processing(FIRST_JOB);
         version.fail(FIRST_JOB, "processing-error", NOW);
         version.reprocess(NOW);
-        given(versions.findById(VERSION)).willReturn(Optional.of(version));
+        given(versions.findByIdForUpdate(VERSION)).willReturn(Optional.of(version));
         service.startProcessing(VERSION, SECOND_JOB);
 
         service.completeProcessing(VERSION, FIRST_JOB, FIRST);
@@ -86,7 +86,7 @@ class TrackVersionsServiceTest {
     @Test
     void ignoresFailureArrivingAfterTheVersionIsReady() {
         TrackVersion version = TrackVersionFixtures.processing(FIRST_JOB);
-        given(versions.findById(VERSION)).willReturn(Optional.of(version));
+        given(versions.findByIdForUpdate(VERSION)).willReturn(Optional.of(version));
         service.completeProcessing(VERSION, FIRST_JOB, FIRST);
 
         service.failProcessing(VERSION, FIRST_JOB, "processing-error");
@@ -98,7 +98,7 @@ class TrackVersionsServiceTest {
     @Test
     void appliesFailureOfTheCurrentJob() {
         TrackVersion version = TrackVersionFixtures.processing(FIRST_JOB);
-        given(versions.findById(VERSION)).willReturn(Optional.of(version));
+        given(versions.findByIdForUpdate(VERSION)).willReturn(Optional.of(version));
 
         service.failProcessing(VERSION, FIRST_JOB, "duration-exceeded");
 

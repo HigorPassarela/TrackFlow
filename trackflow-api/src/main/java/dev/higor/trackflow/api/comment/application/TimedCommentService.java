@@ -1,11 +1,10 @@
 package dev.higor.trackflow.api.comment.application;
 
-import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toSet;
 
 import dev.higor.trackflow.api.comment.CommentAdded;
 import dev.higor.trackflow.api.comment.domain.TimedComment;
+import dev.higor.trackflow.api.comment.domain.TimedComment.Visibility;
 import dev.higor.trackflow.api.comment.domain.TimedCommentRepository;
 import dev.higor.trackflow.api.identity.UserDirectory;
 import dev.higor.trackflow.api.project.ProjectAccess;
@@ -16,11 +15,13 @@ import dev.higor.trackflow.api.shared.error.NotFoundException;
 import dev.higor.trackflow.api.version.TrackVersions;
 import dev.higor.trackflow.api.version.VersionSummary;
 import java.time.Clock;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -99,24 +100,54 @@ public class TimedCommentService {
         return CommentView.of(reply, users.displayNames(Set.of(reply.getAuthorId())), List.of());
     }
 
-    /** Root comments ordered by position, each with its replies in chronological order. */
+    /**
+     * Root comments ordered by position, each with its replies in chronological order. A deleted
+     * comment disappears, unless it still has replies: then it stays as a "removed" placeholder.
+     */
     @Transactional(readOnly = true)
     public List<CommentView> list(UUID projectId, UUID versionId, UUID userId, boolean onlyUnresolved) {
         projectAccess.requireRole(projectId, userId, ProjectRole.LISTENER);
         requireVersion(projectId, versionId);
 
-        List<TimedComment> all = comments.findAllOfVersion(projectId, versionId);
-        Map<UUID, String> names =
-                users.displayNames(all.stream().map(TimedComment::getAuthorId).collect(toSet()));
+        List<TimedComment> threads = comments.findThreadsOfVersion(projectId, versionId, onlyUnresolved);
+        if (threads.isEmpty()) {
+            return List.of();
+        }
         Map<UUID, List<TimedComment>> repliesByThread =
-                all.stream().filter(TimedComment::isReply).collect(groupingBy(TimedComment::threadId));
+                comments
+                        .findRepliesOf(
+                                projectId,
+                                threads.stream().map(TimedComment::getId).toList())
+                        .stream()
+                        .filter(reply -> !reply.isDeleted())
+                        .collect(groupingBy(TimedComment::getParentId));
+        Map<UUID, String> names = users.displayNames(peopleIn(threads, repliesByThread));
 
-        return all.stream()
-                .filter(comment -> !comment.isReply())
-                .filter(root -> !onlyUnresolved || !root.isResolved())
-                .sorted(comparing(TimedComment::getPositionMs))
+        return threads.stream()
+                .filter(root -> root.visibility(repliesByThread.containsKey(root.getId())) != Visibility.HIDDEN)
                 .map(root -> CommentView.of(root, names, repliesOf(root, repliesByThread, names)))
                 .toList();
+    }
+
+    /** Only the author may rewrite a comment; it then shows as edited. */
+    @Transactional
+    public CommentView edit(EditComment command) {
+        projectAccess.requireRoleOnActiveProject(command.projectId(), command.userId(), ProjectRole.LISTENER);
+        TimedComment comment = requireComment(command.projectId(), command.versionId(), command.commentId());
+
+        comment.edit(command.userId(), command.body(), clock.instant());
+        log.info("Comment edited commentId={} versionId={}", comment.getId(), comment.getVersionId());
+        return CommentView.of(comment, users.displayNames(peopleIn(List.of(comment), Map.of())), List.of());
+    }
+
+    /** The author or the project owner. Replies stay; the comment itself shows as removed. */
+    @Transactional
+    public void delete(UUID projectId, UUID versionId, UUID commentId, UUID userId) {
+        ProjectRole role = projectAccess.requireRoleOnActiveProject(projectId, userId, ProjectRole.LISTENER);
+        TimedComment comment = requireComment(projectId, versionId, commentId);
+
+        comment.delete(userId, role, clock.instant());
+        log.info("Comment deleted commentId={} versionId={}", commentId, versionId);
     }
 
     @Transactional
@@ -127,6 +158,15 @@ public class TimedCommentService {
         comment.resolve(userId, role, clock.instant());
         // No save(): the entity is managed, and the change is flushed when the transaction commits.
         log.info("Comment resolved commentId={} versionId={}", commentId, versionId);
+    }
+
+    @Transactional
+    public void reopen(UUID projectId, UUID versionId, UUID commentId, UUID userId) {
+        ProjectRole role = projectAccess.requireRoleOnActiveProject(projectId, userId, ProjectRole.LISTENER);
+        TimedComment comment = requireComment(projectId, versionId, commentId);
+
+        comment.reopen(userId, role);
+        log.info("Comment reopened commentId={} versionId={}", commentId, versionId);
     }
 
     private void afterCommentStored(TimedComment comment) {
@@ -142,6 +182,19 @@ public class TimedCommentService {
                 comment.getId(),
                 comment.getVersionId(),
                 comment.isReply());
+    }
+
+    /** Authors and resolvers, so every name in the response comes from one directory call. */
+    private static Set<UUID> peopleIn(List<TimedComment> threads, Map<UUID, List<TimedComment>> repliesByThread) {
+        Set<UUID> people = new HashSet<>();
+        Stream.concat(threads.stream(), repliesByThread.values().stream().flatMap(List::stream))
+                .forEach(comment -> {
+                    people.add(comment.getAuthorId());
+                    if (comment.getResolvedBy() != null) {
+                        people.add(comment.getResolvedBy());
+                    }
+                });
+        return people;
     }
 
     private static List<CommentView> repliesOf(

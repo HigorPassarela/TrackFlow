@@ -6,7 +6,9 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -62,6 +64,26 @@ class TimedCommentController {
         return CommentResponse.from(service.reply(request.toCommand(projectId, versionId, commentId, user.id())));
     }
 
+    @PatchMapping("/{commentId}")
+    CommentResponse edit(
+            @PathVariable UUID projectId,
+            @PathVariable UUID versionId,
+            @PathVariable UUID commentId,
+            @Valid @RequestBody EditCommentRequest request,
+            AuthenticatedUser user) {
+        return CommentResponse.from(service.edit(request.toCommand(projectId, versionId, commentId, user.id())));
+    }
+
+    @DeleteMapping("/{commentId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void delete(
+            @PathVariable UUID projectId,
+            @PathVariable UUID versionId,
+            @PathVariable UUID commentId,
+            AuthenticatedUser user) {
+        service.delete(projectId, versionId, commentId, user.id());
+    }
+
     @PostMapping("/{commentId}/resolve")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void resolve(
@@ -70,5 +92,15 @@ class TimedCommentController {
             @PathVariable UUID commentId,
             AuthenticatedUser user) {
         service.resolve(projectId, versionId, commentId, user.id());
+    }
+
+    @PostMapping("/{commentId}/reopen")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void reopen(
+            @PathVariable UUID projectId,
+            @PathVariable UUID versionId,
+            @PathVariable UUID commentId,
+            AuthenticatedUser user) {
+        service.reopen(projectId, versionId, commentId, user.id());
     }
 }

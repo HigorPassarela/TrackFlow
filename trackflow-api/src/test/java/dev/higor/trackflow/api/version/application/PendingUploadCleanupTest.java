@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.SimpleTransactionStatus;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -116,9 +115,7 @@ class PendingUploadCleanupTest {
                 .alsSizeBytes(withAbleton ? 5L : null)
                 .createdAt(createdAt)
                 .build();
-        UUID id = UUID.randomUUID();
-        ReflectionTestUtils.setField(version, "id", id);
-        String prefix = "projects/%s/versions/%s/".formatted(PROJECT, id);
+        String prefix = "projects/%s/versions/%s/".formatted(PROJECT, version.getId());
         version.assignStorageKeys(prefix + "source.wav", withAbleton ? prefix + "project.als" : null);
         return version;
     }

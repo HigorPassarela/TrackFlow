@@ -16,7 +16,9 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.id.uuid.UuidVersion7Strategy;
+import org.hibernate.type.SqlTypes;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -44,12 +46,17 @@ public class TrackVersion {
     public static final double MIN_BPM = 40;
     public static final double MAX_BPM = 250;
 
+    /**
+     * Assigned in the constructor, not by {@code @UuidGenerator}: the storage keys contain the id and
+     * {@code source_key} is not null, so the id must exist before the insert. Hibernate inserts the
+     * state captured at {@code persist}, and changes made after it only become a later update.
+     */
     @Id
-    @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
     private UUID id;
 
+    /** A wrapper, so Spring Data sees a null version and persists the new version instead of merging it. */
     @Version
-    private long rowVersion;
+    private @Nullable Long rowVersion;
 
     private UUID projectId;
 
@@ -86,12 +93,17 @@ public class TrackVersion {
 
     private @Nullable Long durationMs;
 
+    // Columns are numeric(5, 1): the one decimal place the specs ask for is enforced by the database.
+    @JdbcTypeCode(SqlTypes.NUMERIC)
     private @Nullable Double bpmEstimated;
 
+    @JdbcTypeCode(SqlTypes.NUMERIC)
     private @Nullable Double bpmOverride;
 
+    @JdbcTypeCode(SqlTypes.NUMERIC)
     private @Nullable Double loudnessLufs;
 
+    @JdbcTypeCode(SqlTypes.NUMERIC)
     private @Nullable Double truePeakDbtp;
 
     private @Nullable String failureReason;
@@ -104,11 +116,7 @@ public class TrackVersion {
 
     private Instant updatedAt;
 
-    /**
-     * The storage keys depend on the id, which Hibernate generates on {@code persist}: save the
-     * version first, then call {@link #assignStorageKeys}. The row is only inserted at flush, so the
-     * keys are always there when it reaches the database.
-     */
+    /** Call {@link #assignStorageKeys} before saving: the keys contain the id assigned here. */
     @Builder
     private TrackVersion(
             UUID projectId,
@@ -127,6 +135,7 @@ public class TrackVersion {
         if ((alsFileName == null) != (alsSizeBytes == null)) {
             throw new IllegalArgumentException("Ableton attachment needs file name and size together");
         }
+        this.id = UuidVersion7Strategy.INSTANCE.generateUuid(null);
         this.projectId = projectId;
         this.uploadedBy = uploadedBy;
         this.originalFileName = originalFileName;
@@ -142,7 +151,7 @@ public class TrackVersion {
 
     /**
      * Deterministic keys under the version's id, so reprocessing overwrites the same objects.
-     * Assigned exactly once, right after the first save.
+     * Assigned exactly once, before the first save.
      */
     public void assignStorageKeys(String newSourceKey, @Nullable String newAlsKey) {
         if (sourceKey != null) {

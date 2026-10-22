@@ -12,7 +12,9 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.type.SqlTypes;
 import org.jspecify.annotations.Nullable;
 
 /** A public, time-limited link to listen to one ready version without an account. */
@@ -37,6 +39,8 @@ public class ShareLink {
 
     private UUID versionId;
 
+    // char(64): a SHA-256 hex digest always has exactly 64 characters.
+    @JdbcTypeCode(SqlTypes.CHAR)
     private String tokenHash;
 
     private UUID createdBy;

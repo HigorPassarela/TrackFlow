@@ -85,7 +85,7 @@ public class VersionService {
             requireAcceptedAbleton(command.ableton());
         }
 
-        TrackVersion version = versions.save(TrackVersion.builder()
+        TrackVersion version = TrackVersion.builder()
                 .projectId(command.projectId())
                 .uploadedBy(command.userId())
                 .originalFileName(command.fileName())
@@ -96,11 +96,12 @@ public class VersionService {
                 .title(command.title())
                 .notes(command.notes())
                 .createdAt(clock.instant())
-                .build());
+                .build();
         String prefix = "projects/%s/versions/%s/".formatted(command.projectId(), version.getId());
         version.assignStorageKeys(
                 prefix + "source." + format.storageExtension(),
                 command.ableton() != null ? prefix + "project.als" : null);
+        versions.save(version);
 
         var ttl = properties.upload().urlTtl();
         SignedRequest source =

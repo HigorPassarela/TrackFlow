@@ -2,10 +2,12 @@ package dev.higor.trackflow.api.comment.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.higor.trackflow.api.project.ProjectRole;
 import dev.higor.trackflow.api.support.PostgresTestConfiguration;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -43,13 +45,55 @@ class TimedCommentRepositoryIT {
     }
 
     @Test
-    void listsCommentsOfAVersionInCreationOrder() {
-        TimedComment first = comments.save(rootCommentAt(120_000, NOW));
-        TimedComment second = comments.save(rootCommentAt(30_000, NOW.plusSeconds(5)));
+    @DisplayName("Scenario: order by position")
+    void listsThreadsByPositionInTheTrack() {
+        comments.save(rootCommentAt(120_000, NOW));
+        comments.save(rootCommentAt(30_000, NOW.plusSeconds(1)));
+        comments.save(rootCommentAt(92_000, NOW.plusSeconds(2)));
 
-        List<TimedComment> all = comments.findAllOfVersion(PROJECT, VERSION);
+        List<TimedComment> threads = comments.findThreadsOfVersion(PROJECT, VERSION, false);
 
-        assertThat(all).extracting(TimedComment::getId).containsExactly(first.getId(), second.getId());
+        assertThat(threads).extracting(TimedComment::getPositionMs).containsExactly(30_000L, 92_000L, 120_000L);
+    }
+
+    @Test
+    @DisplayName("Scenario: filter unresolved")
+    void leavesResolvedThreadsOutWhenAskedForUnresolvedOnly() {
+        TimedComment open = comments.save(rootCommentAt(30_000, NOW));
+        TimedComment resolved = rootCommentAt(60_000, NOW);
+        resolved.resolve(AUTHOR, ProjectRole.OWNER, NOW.plusSeconds(10));
+        comments.save(resolved);
+
+        assertThat(comments.findThreadsOfVersion(PROJECT, VERSION, true))
+                .extracting(TimedComment::getId)
+                .containsExactly(open.getId());
+        assertThat(comments.findThreadsOfVersion(PROJECT, VERSION, false)).hasSize(2);
+    }
+
+    @Test
+    void listsRepliesInChronologicalOrderLeavingRepliesAsThreadsOut() {
+        TimedComment root = comments.save(rootCommentAt(92_000, NOW));
+        TimedComment later = comments.save(replyTo(root, NOW.plusSeconds(20)));
+        TimedComment earlier = comments.save(replyTo(root, NOW.plusSeconds(10)));
+
+        assertThat(comments.findThreadsOfVersion(PROJECT, VERSION, false))
+                .extracting(TimedComment::getId)
+                .containsExactly(root.getId());
+        assertThat(comments.findRepliesOf(PROJECT, List.of(root.getId())))
+                .extracting(TimedComment::getId)
+                .containsExactly(earlier.getId(), later.getId());
+        assertThat(comments.findRepliesOf(OTHER_PROJECT, List.of(root.getId()))).isEmpty();
+    }
+
+    private static TimedComment replyTo(TimedComment root, Instant createdAt) {
+        return TimedComment.builder()
+                .projectId(PROJECT)
+                .versionId(VERSION)
+                .parentId(root.getId())
+                .authorId(AUTHOR)
+                .body("resposta")
+                .createdAt(createdAt)
+                .build();
     }
 
     private static TimedComment rootCommentAt(long positionMs, Instant createdAt) {

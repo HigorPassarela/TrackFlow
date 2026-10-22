@@ -49,6 +49,7 @@ public class AbletonAnalysis {
 
     private boolean verifiedVersion;
 
+    @JdbcTypeCode(SqlTypes.NUMERIC)
     private @Nullable Double tempo;
 
     private @Nullable String timeSignature;
@@ -68,6 +69,16 @@ public class AbletonAnalysis {
         this.status = AnalysisStatus.PENDING;
         this.tracks = List.of();
         this.createdAt = createdAt;
+    }
+
+    /**
+     * A new job took over the analysis (the confirmation event was sent again). Only a pending
+     * analysis changes hands; a finished one keeps its result.
+     */
+    public void reassignPendingJob(UUID newJobId) {
+        if (status == AnalysisStatus.PENDING) {
+            jobId = newJobId;
+        }
     }
 
     /** @return whether the result was applied; {@code false} for duplicated or stale results */

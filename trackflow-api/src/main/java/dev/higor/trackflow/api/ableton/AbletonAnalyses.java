@@ -10,7 +10,12 @@ import org.jspecify.annotations.Nullable;
  */
 public interface AbletonAnalyses {
 
-    /** Records that an analysis job was sent for the version's project file. */
+    /**
+     * Records that an analysis job is about to be sent for the version's project file. Commits on
+     * its own, before the job leaves, so even a result that comes back at once finds the analysis.
+     * Registering again while the analysis is pending (a resubmitted confirmation) hands it to the
+     * new job; results of the old one are then ignored.
+     */
     void registerPending(UUID versionId, UUID projectId, UUID jobId);
 
     void complete(UUID versionId, UUID jobId, ProjectSnapshot snapshot);

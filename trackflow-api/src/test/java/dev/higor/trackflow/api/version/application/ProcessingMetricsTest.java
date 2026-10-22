@@ -44,7 +44,7 @@ class ProcessingMetricsTest {
         service = new TrackVersionsService(
                 versions, events, new ProcessingMetrics(registry), Clock.fixed(RESULT_AT, ZoneOffset.UTC));
         version = TrackVersionFixtures.processing(JOB);
-        given(versions.findById(version.getId())).willReturn(Optional.of(version));
+        given(versions.findByIdForUpdate(version.getId())).willReturn(Optional.of(version));
     }
 
     @Test
